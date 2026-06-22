@@ -8,7 +8,7 @@ const IS_KV = !!process.env.KV_REST_API_URL
 
 async function kvGet<T>(key: string, fallback: T): Promise<T> {
   if (!IS_KV) return localGet<T>(key, fallback)
-  const { kv } = await import('@vercel/kv')
+  const { kv } = await import('@vercel/kv'
   const val = await kv.get<T>(key)
   return val ?? fallback
 }
@@ -42,12 +42,7 @@ function localSet(key: string, value: unknown) {
 }
 
 // ─── Default vendors ────────────────────────────────────────────────────────
-const DEFAULT_VENDORS: Vendor[] = [
-  { id: 'v1', name: 'MedTech Solutions',      email: 'booth@medtech.com',  passcode: 'MED2026' },
-  { id: 'v2', name: 'HealthAI Corp',           email: 'leads@healthai.com', passcode: 'HAI2026' },
-  { id: 'v3', name: 'RxPlus Pharmacy Systems', email: 'sales@rxplus.com',   passcode: 'RXP2026' },
-  { id: 'v4', name: 'CareFlow EHR',            email: 'info@careflow.com',  passcode: 'CFE2026' },
-]
+const DEFAULT_VENDORS: Vendor[] = []
 
 // ─── Public DB API (all async) ──────────────────────────────────────────────
 export const db = {
