@@ -27,6 +27,13 @@ export default function ScanPage() {
     fetch(`/api/leads?vendorId=${v.id}`).then(r => r.json()).then(leads => setLeadCount(leads.length))
   }, [router])
 
+  // Auto-load attendee if URL has ?id= (from QR code scan)
+  useEffect(() => {
+    if (!router.isReady) return
+    const id = router.query.id as string
+    if (id) lookupAttendee(id)
+  }, [router.isReady, router.query.id])
+
   async function startScanner() {
     setScanning(true)
     setError('')
@@ -43,7 +50,10 @@ export default function ScanPage() {
         if (result) {
           const text = result.getText()
           stopScanner()
-          await lookupAttendee(text)
+          // Handle both plain ID and full URL formats
+          const idMatch = text.match(/[?&]id=([^&]+)/) || text.match(/scan\?id=([^&]+)/)
+          const id = idMatch ? idMatch[1] : text
+          await lookupAttendee(id)
         }
       })
     } catch {
