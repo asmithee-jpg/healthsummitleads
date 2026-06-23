@@ -199,14 +199,25 @@ export default function Admin() {
       <Head><title>Admin — ACA Health Summit</title></Head>
       <div style={s.loginPage}>
         <div style={s.loginCard}>
-          <h1 style={s.loginTitle}>Admin Dashboard</h1>
-          <p style={s.loginSub}>ACA Health Summit 2026</p>
-          <form onSubmit={handleLogin} style={{ marginTop: 24 }}>
+          <div style={{ textAlign: 'center', marginBottom: 24 }}>
+            <svg viewBox="0 0 140 44" width="140" height="44" xmlns="http://www.w3.org/2000/svg">
+              <text x="2" y="36" fontFamily="Arial Black, sans-serif" fontSize="38" fontWeight="900" fill="#6B3FA0" letterSpacing="-1">aca</text>
+              <line x1="88" y1="6" x2="88" y2="40" stroke="#E5E7EB" strokeWidth="1"/>
+              <text x="96" y="21" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="700" fill="#111827">Health</text>
+              <text x="96" y="37" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="700" fill="#111827">Summit</text>
+            </svg>
+          </div>
+          <h1 style={{ ...s.loginTitle, marginBottom: 4 }}>Admin Sign In</h1>
+          <p style={{ ...s.loginSub, marginBottom: 24 }}>Conference organizer access</p>
+          <form onSubmit={handleLogin}>
             <label style={s.label}>Admin password</label>
-            <input style={s.input} type="password" value={pass} onChange={e => setPass(e.target.value)} />
+            <input style={s.input} type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder="Enter admin password" autoFocus />
             {passError && <div style={s.errorMsg}>{passError}</div>}
-            <button style={{ ...s.btn, marginTop: 12 }} type="submit">Enter</button>
+            <button style={{ ...s.btn, marginTop: 16 }} type="submit">Sign In →</button>
           </form>
+          <div style={{ marginTop: 20, textAlign: 'center' }}>
+            <a href="/app" style={{ color: '#9CA3AF', fontSize: 13, textDecoration: 'none' }}>← Back to conference app</a>
+          </div>
         </div>
       </div>
     </>
@@ -397,7 +408,7 @@ export default function Admin() {
                 <form onSubmit={saveSession}>
                   <div style={s.formGrid}>
                     <div style={{ gridColumn: '1/-1' }}><label style={s.label}>Session title *</label><input style={s.input} required value={editingSession ? editingSession.title : newSession.title} onChange={e => editingSession ? setEditingSession({ ...editingSession, title: e.target.value }) : setNewSession({ ...newSession, title: e.target.value })} placeholder="Keynote: Future of ACA" /></div>
-                    <div><label style={s.label}>Day *</label><input style={s.input} required value={editingSession ? editingSession.day : newSession.day} onChange={e => editingSession ? setEditingSession({ ...editingSession, day: e.target.value }) : setNewSession({ ...newSession, day: e.target.value })} placeholder="Day 1" /></div>
+                    <div><label style={s.label}>Day</label><input style={s.input} value={editingSession ? editingSession.day : newSession.day} onChange={e => editingSession ? setEditingSession({ ...editingSession, day: e.target.value }) : setNewSession({ ...newSession, day: e.target.value })} placeholder="Day 1 (or leave blank for single-day event)" /></div>
                     <div><label style={s.label}>Location *</label><input style={s.input} required value={editingSession ? editingSession.location : newSession.location} onChange={e => editingSession ? setEditingSession({ ...editingSession, location: e.target.value }) : setNewSession({ ...newSession, location: e.target.value })} placeholder="Main Hall" /></div>
                     <div><label style={s.label}>Start time *</label><input style={s.input} type="datetime-local" required value={editingSession ? editingSession.startTime : newSession.startTime} onChange={e => editingSession ? setEditingSession({ ...editingSession, startTime: e.target.value }) : setNewSession({ ...newSession, startTime: e.target.value })} /></div>
                     <div><label style={s.label}>End time *</label><input style={s.input} type="datetime-local" required value={editingSession ? editingSession.endTime : newSession.endTime} onChange={e => editingSession ? setEditingSession({ ...editingSession, endTime: e.target.value }) : setNewSession({ ...newSession, endTime: e.target.value })} /></div>
