@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { Attendee, Session, Speaker, Sponsor, Message, Connection } from '@/lib/types'
 
-type Tab = 'home' | 'agenda' | 'speakers' | 'attendees' | 'sponsors' | 'messages' | 'schedule' | 'map'
+type Tab = 'home' | 'agenda' | 'speakers' | 'attendees' | 'sponsors' | 'messages' | 'schedule' | 'map' | 'profile'
 type User = { attendeeId: string; name: string; email: string }
 
 export default function AppPage() {
@@ -151,7 +151,13 @@ export default function AppPage() {
       <Head><title>ACA Health Summit 2026</title></Head>
       <div style={s.loginPage}>
         <div style={s.loginCard}>
-          <div style={s.loginLogo}>🏥</div>
+          <div style={{ textAlign: 'center', marginBottom: 12 }}>
+            <svg viewBox="0 0 200 60" width="160" height="48" xmlns="http://www.w3.org/2000/svg">
+              <text x="8" y="44" fontFamily="Arial Black, sans-serif" fontSize="42" fontWeight="900" fill="#4338CA">aca</text>
+              <text x="108" y="28" fontFamily="Arial, sans-serif" fontSize="14" fontWeight="700" fill="#111827">Health</text>
+              <text x="108" y="46" fontFamily="Arial, sans-serif" fontSize="14" fontWeight="700" fill="#111827">Summit</text>
+            </svg>
+          </div>
           <h1 style={s.loginTitle}>ACA Health Summit</h1>
           <p style={s.loginSub}>2026 Conference App</p>
           <form onSubmit={handleLogin} style={{ marginTop: 28 }}>
@@ -173,9 +179,12 @@ export default function AppPage() {
         {/* Header */}
         <header style={s.header}>
           <div style={s.headerInner}>
-            <div>
-              <div style={s.headerTitle}>ACA Health Summit</div>
-              <div style={s.headerSub}>2026</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <svg viewBox="0 0 200 60" width="100" height="30" xmlns="http://www.w3.org/2000/svg">
+                <text x="8" y="44" fontFamily="Arial Black, sans-serif" fontSize="42" fontWeight="900" fill="white">aca</text>
+                <text x="108" y="26" fontFamily="Arial, sans-serif" fontSize="13" fontWeight="700" fill="#C7D2FE">Health</text>
+                <text x="108" y="44" fontFamily="Arial, sans-serif" fontSize="13" fontWeight="700" fill="#C7D2FE">Summit</text>
+              </svg>
             </div>
             <div style={s.headerUser} onClick={() => { localStorage.removeItem('conf_user'); setUser(null) }}>
               <div style={s.avatar}>{user.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
@@ -204,6 +213,7 @@ export default function AppPage() {
                     { icon: '⭐', label: 'My Schedule', tab: 'schedule' },
                     { icon: '💬', label: 'Messages', tab: 'messages' },
                     { icon: '🗺️', label: 'Map', tab: 'map' },
+                    { icon: '👤', label: 'My Profile', tab: 'profile' },
                   ].map(item => (
                     <button key={item.tab} style={s.quickCard} onClick={() => setTab(item.tab as Tab)}>
                       <span style={{ fontSize: 28 }}>{item.icon}</span>
@@ -508,6 +518,24 @@ export default function AppPage() {
             </div>
           )}
 
+          {/* PROFILE */}
+          {tab === 'profile' && (
+            <div>
+              <div style={s.pageHeader}><div style={s.pageTitle}>👤 My Profile</div></div>
+              <ProfileEditor user={user} onUpdate={(updated) => { localStorage.setItem('conf_user', JSON.stringify(updated)); setUser(updated) }} />
+              <div style={{ padding: '0 16px 16px' }}>
+                <div style={{ ...s.card, background: '#FEF2F2', border: '1px solid #FECACA' }}>
+                  <div style={{ fontWeight: 600, marginBottom: 8, color: '#B91C1C' }}>Admin Access</div>
+                  <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 12 }}>If you are a conference organizer, access the admin panel to manage attendees, agenda, speakers, and more.</div>
+                  <a href="/admin" style={{ ...s.btn, display: 'block', textAlign: 'center', textDecoration: 'none' }}>Go to Admin Dashboard →</a>
+                </div>
+              </div>
+              <div style={{ padding: '0 16px 16px' }}>
+                <button style={{ ...s.btnOutline, width: '100%' }} onClick={() => { localStorage.removeItem('conf_user'); setUser(null) }}>Sign Out</button>
+              </div>
+            </div>
+          )}
+
           {/* MAP */}
           {tab === 'map' && (
             <div>
@@ -543,6 +571,7 @@ export default function AppPage() {
             { id: 'attendees', icon: '👥', label: 'People' },
             { id: 'messages', icon: '💬', label: 'Messages', badge: unreadCount },
             { id: 'schedule', icon: '⭐', label: 'Schedule' },
+            { id: 'profile', icon: '👤', label: 'Profile' },
           ].map(item => (
             <button key={item.id} style={{ ...s.navItem, ...(tab === item.id ? s.navItemActive : {}) }}
               onClick={() => { setTab(item.id as Tab); setSearch(''); setSelectedAttendee(null); setSelectedSession(null); setSelectedSpeaker(null); if (item.id !== 'messages') setMsgTo(null) }}>
@@ -558,6 +587,148 @@ export default function AppPage() {
     </>
   )
 }
+
+function ProfileEditor({ user, onUpdate }: { user: { attendeeId: string; name: string; email: string }, onUpdate: (u: any) => void }) {
+  const [editing, setEditing] = useState(false)
+  const [attendee, setAttendee] = useState<any>(null)
+  const [form, setForm] = useState({ name: '', title: '', org: '', phone: '', bio: '' })
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState('')
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/attendees').then(r => r.json()).then((attendees: any[]) => {
+      const me = attendees.find(a => a.id === user.attendeeId)
+      if (me) {
+        setAttendee(me)
+        setForm({ name: me.name || '', title: me.title || '', org: me.org || '', phone: me.phone || '', bio: me.bio || '' })
+      }
+    })
+  }, [user.attendeeId])
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault(); setSaving(true)
+    const res = await fetch('/api/attendees', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: user.attendeeId, ...form, email: user.email, avatar: attendee?.avatar })
+    })
+    const updated = await res.json()
+    setAttendee(updated)
+    onUpdate({ ...user, name: form.name })
+    setMsg('✓ Profile saved!'); setEditing(false); setSaving(false)
+    setTimeout(() => setMsg(''), 3000)
+  }
+
+  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]; if (!file) return
+    setUploadingPhoto(true)
+    const res = await fetch(`/api/upload?attendeeId=${user.attendeeId}&filename=${file.name}`, {
+      method: 'POST',
+      body: file,
+      headers: { 'content-type': file.type },
+    })
+    const data = await res.json()
+    if (data.url) {
+      setAttendee((prev: any) => ({ ...prev, avatar: data.url }))
+      setMsg('✓ Photo updated!')
+      setTimeout(() => setMsg(''), 3000)
+    }
+    setUploadingPhoto(false)
+  }
+
+  const initials = (form.name || user.name).split(' ').map((w: string) => w[0]).join('').slice(0,2).toUpperCase()
+
+  const ps: Record<string, React.CSSProperties> = {
+    card: { background: 'white', border: '1px solid #E5E7EB', borderRadius: 12, padding: 20, margin: '0 16px 12px' },
+    label: { display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6, color: '#374151', marginTop: 14 },
+    input: { width: '100%', padding: '10px 12px', border: '1px solid #E5E7EB', borderRadius: 8, fontSize: 14, fontFamily: 'inherit' },
+    btn: { background: '#4338CA', color: 'white', border: 'none', borderRadius: 10, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%', marginTop: 16 },
+    btnSm: { background: 'none', border: '1px solid #E5E7EB', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 500, cursor: 'pointer', color: '#374151' },
+    row: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
+    fieldRow: { borderBottom: '1px solid #F3F4F6', padding: '12px 0' },
+    fieldLabel: { fontSize: 12, color: '#9CA3AF', marginBottom: 3, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: '0.5px' },
+    fieldValue: { fontSize: 15, color: '#111827' },
+  }
+
+  if (!attendee) return <div style={{ padding: 40, textAlign: 'center', color: '#9CA3AF' }}>Loading profile…</div>
+
+  return (
+    <div>
+      {/* Photo + name header */}
+      <div style={{ ...ps.card, textAlign: 'center' as const }}>
+        <div style={{ position: 'relative', display: 'inline-block', marginBottom: 12 }}>
+          {attendee.avatar
+            ? <img src={attendee.avatar} alt={attendee.name} style={{ width: 90, height: 90, borderRadius: '50%', objectFit: 'cover', border: '3px solid #EEF2FF' }} />
+            : <div style={{ width: 90, height: 90, borderRadius: '50%', background: '#EEF2FF', color: '#4338CA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 700, margin: '0 auto' }}>{initials}</div>
+          }
+          <label style={{ position: 'absolute', bottom: 0, right: 0, background: '#4338CA', color: 'white', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14 }}>
+            {uploadingPhoto ? '…' : '📷'}
+            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
+          </label>
+        </div>
+        <div style={{ fontWeight: 700, fontSize: 20 }}>{attendee.name}</div>
+        {attendee.title && <div style={{ color: '#6B7280', fontSize: 14, marginTop: 2 }}>{attendee.title}</div>}
+        {attendee.org && <div style={{ color: '#6B7280', fontSize: 14 }}>{attendee.org}</div>}
+        {msg && <div style={{ color: '#059669', fontSize: 13, marginTop: 8 }}>{msg}</div>}
+      </div>
+
+      {/* View mode */}
+      {!editing && (
+        <div style={ps.card}>
+          <div style={ps.row}>
+            <div style={{ fontWeight: 600, fontSize: 15 }}>Contact Details</div>
+            <button style={ps.btnSm} onClick={() => setEditing(true)}>Edit Profile</button>
+          </div>
+          <div style={ps.fieldRow}>
+            <div style={ps.fieldLabel}>Email</div>
+            <div style={ps.fieldValue}>{attendee.email}</div>
+          </div>
+          {attendee.phone && <div style={ps.fieldRow}>
+            <div style={ps.fieldLabel}>Phone</div>
+            <div style={ps.fieldValue}>{attendee.phone}</div>
+          </div>}
+          {attendee.org && <div style={ps.fieldRow}>
+            <div style={ps.fieldLabel}>Organization</div>
+            <div style={ps.fieldValue}>{attendee.org}</div>
+          </div>}
+          {attendee.title && <div style={ps.fieldRow}>
+            <div style={ps.fieldLabel}>Job Title</div>
+            <div style={ps.fieldValue}>{attendee.title}</div>
+          </div>}
+          {attendee.bio && <div style={ps.fieldRow}>
+            <div style={ps.fieldLabel}>Bio</div>
+            <div style={{ ...ps.fieldValue, lineHeight: 1.6, color: '#374151' }}>{attendee.bio}</div>
+          </div>}
+        </div>
+      )}
+
+      {/* Edit mode */}
+      {editing && (
+        <div style={ps.card}>
+          <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 16 }}>Edit Profile</div>
+          <form onSubmit={save}>
+            <label style={ps.label}>Full name</label>
+            <input style={ps.input} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Jane Smith" />
+            <label style={ps.label}>Job title</label>
+            <input style={ps.input} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Chief Medical Officer" />
+            <label style={ps.label}>Organization</label>
+            <input style={ps.input} value={form.org} onChange={e => setForm({ ...form, org: e.target.value })} placeholder="SelectHealth" />
+            <label style={ps.label}>Phone</label>
+            <input style={ps.input} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="801-555-0100" />
+            <label style={ps.label}>Bio</label>
+            <textarea style={{ ...ps.input, minHeight: 80 }} value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })} placeholder="Tell other attendees about yourself…" />
+            <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+              <button style={ps.btn} type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save Changes'}</button>
+              <button style={{ ...ps.btnSm, flex: '0 0 auto' }} type="button" onClick={() => setEditing(false)}>Cancel</button>
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
+  )
+}
+
 
 function formatTime(iso: string) {
   if (!iso) return ''
