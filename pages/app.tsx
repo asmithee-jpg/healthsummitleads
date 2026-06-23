@@ -9,12 +9,16 @@ type User = { attendeeId: string; name: string; email: string; role: UserRole; v
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'asmithee@insurewithcompass.com'
 
 function ACALogo({ variant = 'dark', width = 140 }: { variant?: 'dark' | 'light', width?: number }) {
-  const textColor = variant === 'light' ? '#ffffff' : '#111827'
+  // aca is always purple; Health/Summit text adapts to background
+  const textColor = variant === 'light' ? 'rgba(255,255,255,0.9)' : '#111827'
+  const dividerColor = variant === 'light' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.15)'
+  // On dark (purple) sidebar, make aca white so it shows up
+  const acaColor = variant === 'light' ? 'white' : '#6B3FA0'
   const h = Math.round((44 / 140) * width)
   return (
     <svg viewBox="0 0 140 44" width={width} height={h} xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
-      <text x="2" y="36" fontFamily="'Arial Rounded MT Bold','Nunito',Arial,sans-serif" fontSize="38" fontWeight="900" fill="#6B3FA0" letterSpacing="-1">aca</text>
-      <line x1="88" y1="6" x2="88" y2="40" stroke={textColor} strokeWidth="1" opacity="0.2" />
+      <text x="2" y="36" fontFamily="'Arial Rounded MT Bold','Nunito',Arial,sans-serif" fontSize="38" fontWeight="900" fill={acaColor} letterSpacing="-1">aca</text>
+      <line x1="88" y1="6" x2="88" y2="40" stroke={dividerColor} strokeWidth="1" />
       <text x="96" y="21" fontFamily="Arial,sans-serif" fontSize="12" fontWeight="700" fill={textColor}>Health</text>
       <text x="96" y="37" fontFamily="Arial,sans-serif" fontSize="12" fontWeight="700" fill={textColor}>Summit</text>
     </svg>
@@ -37,6 +41,8 @@ export default function AppPage() {
   const [loginLoading, setLoginLoading] = useState(false)
   const [tab, setTab] = useState<Tab>('home')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showWelcomeQR, setShowWelcomeQR] = useState(false)
+  const [welcomeQRUrl, setWelcomeQRUrl] = useState('')
 
   const [attendees, setAttendees] = useState<Attendee[]>([])
   const [sessions, setSessions] = useState<Session[]>([])
@@ -117,6 +123,12 @@ export default function AppPage() {
     const role: UserRole = loginEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase() ? 'admin' : 'attendee'
     const u: User = { attendeeId: found.id, name: found.name, email: found.email, role, org: found.org || loginOrg }
     localStorage.setItem('conf_user', JSON.stringify(u)); setUser(u); loadData(u); setLoginLoading(false)
+    // Generate QR for their badge
+    try {
+      const QRCode = (await import('qrcode')).default
+      const qrUrl = await QRCode.toDataURL(`https://healthsummitleads.vercel.app/scan?id=${found.id}`, { width: 220, margin: 2 })
+      setWelcomeQRUrl(qrUrl); setShowWelcomeQR(true)
+    } catch {}
   }
 
   async function toggleSchedule(id: string) {
@@ -314,6 +326,25 @@ export default function AppPage() {
   return (
     <>
       <Head><title>ACA Health Summit 2026</title><meta name="viewport" content="width=device-width, initial-scale=1" /></Head>
+
+      {/* Welcome QR Modal */}
+      {showWelcomeQR && welcomeQRUrl && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ background: 'white', borderRadius: 20, padding: 36, maxWidth: 380, width: '100%', textAlign: 'center' }}>
+            <div style={{ marginBottom: 16 }}><ACALogo variant="dark" width={140} /></div>
+            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Welcome, {user?.name.split(' ')[0]}!</h2>
+            <p style={{ color: '#6B7280', fontSize: 14, marginBottom: 20 }}>This is your badge QR code. Vendors will scan this at their booths to capture your contact info.</p>
+            <div style={{ background: '#F9FAFB', borderRadius: 12, padding: 20, display: 'inline-block', marginBottom: 20 }}>
+              <img src={welcomeQRUrl} alt="Your badge QR" style={{ width: 180, height: 180, display: 'block' }} />
+              <div style={{ fontWeight: 600, marginTop: 10, fontSize: 14 }}>{user?.name}</div>
+              {user?.org && <div style={{ color: '#6B7280', fontSize: 12 }}>{user?.org}</div>}
+            </div>
+            <p style={{ color: '#9CA3AF', fontSize: 12, marginBottom: 20 }}>Save a screenshot of this for easy access during the event.</p>
+            <button style={{ background: '#4338CA', color: 'white', border: 'none', borderRadius: 10, padding: '12px 24px', fontSize: 15, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={() => setShowWelcomeQR(false)}>Enter Conference App →</button>
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', height: '100vh', background: '#F3F4F6', overflow: 'hidden' }}>
 
         {/* Mobile overlay sidebar */}
@@ -675,13 +706,7 @@ export default function AppPage() {
                     </div>
                   </div>
                 )}
-                {isAdmin && (
-                  <div style={{ background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: 12, padding: 20, marginTop: 16 }}>
-                    <div style={{ fontWeight: 600, color: '#4338CA', marginBottom: 8 }}>⚙️ Admin Access</div>
-                    <div style={{ fontSize: 14, color: '#6B7280', marginBottom: 14 }}>You're signed in as a conference organizer.</div>
-                    <a href="/admin" style={{ ...mc.btn, display: 'block', textAlign: 'center', textDecoration: 'none' }}>Open Admin Dashboard →</a>
-                  </div>
-                )}
+
               </div>
             )}
 
