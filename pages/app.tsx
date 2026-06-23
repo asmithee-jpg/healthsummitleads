@@ -144,6 +144,7 @@ export default function AppPage() {
 
   const days = Array.from(new Set(sessions.map(s => s.day))).sort()
   const unreadCount = messages.filter(m => m.toId === user?.attendeeId && !m.read).length
+  const isAdmin = user?.email === (process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'asmithee@insurewithcompass.com')
   const mySessionsData = sessions.filter(s => mySchedule.includes(s.id))
 
   if (!user) return (
@@ -524,11 +525,13 @@ export default function AppPage() {
               <div style={s.pageHeader}><div style={s.pageTitle}>👤 My Profile</div></div>
               <ProfileEditor user={user} onUpdate={(updated) => { localStorage.setItem('conf_user', JSON.stringify(updated)); setUser(updated) }} />
               <div style={{ padding: '0 16px 16px' }}>
-                <div style={{ ...s.card, background: '#FEF2F2', border: '1px solid #FECACA' }}>
-                  <div style={{ fontWeight: 600, marginBottom: 8, color: '#B91C1C' }}>Admin Access</div>
-                  <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 12 }}>If you are a conference organizer, access the admin panel to manage attendees, agenda, speakers, and more.</div>
-                  <a href="/admin" style={{ ...s.btn, display: 'block', textAlign: 'center', textDecoration: 'none' }}>Go to Admin Dashboard →</a>
+                {isAdmin && (
+                <div style={{ background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 6, color: '#4338CA', display: 'flex', alignItems: 'center', gap: 6 }}>⚙️ Admin Access</div>
+                  <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 12 }}>You are signed in as a conference organizer.</div>
+                  <a href="/admin" style={{ ...s.btn, display: 'block', textAlign: 'center', textDecoration: 'none' }}>Open Admin Dashboard →</a>
                 </div>
+              )}
               </div>
               <div style={{ padding: '0 16px 16px' }}>
                 <button style={{ ...s.btnOutline, width: '100%' }} onClick={() => { localStorage.removeItem('conf_user'); setUser(null) }}>Sign Out</button>
