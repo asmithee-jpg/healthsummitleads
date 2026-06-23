@@ -25,6 +25,7 @@ export default function AppPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [connections, setConnections] = useState<Connection[]>([])
   const [mySchedule, setMySchedule] = useState<string[]>([])
+  const [vendorLeads, setVendorLeads] = useState<any[]>([])
 
   const [search, setSearch] = useState('')
   const [selectedAttendee, setSelectedAttendee] = useState<Attendee | null>(null)
@@ -54,6 +55,10 @@ export default function AppPage() {
   }
 
   async function loadData(u: User) {
+    if (u.role === 'vendor' && u.vendorId) {
+      const leads = await fetch(`/api/leads?vendorId=${u.vendorId}`).then(r => r.json())
+      setVendorLeads(Array.isArray(leads) ? leads : [])
+    }
     const [a, sess, sp, spon, msgs, conns, sched] = await Promise.all([
       fetch('/api/attendees').then(r => r.json()),
       fetch('/api/sessions').then(r => r.json()),
@@ -155,7 +160,13 @@ export default function AppPage() {
 
   function nav(t: Tab) { setTab(t); setSearch(''); setSelectedAttendee(null); setSelectedSession(null); setSelectedSpeaker(null); if (t !== 'messages') setMsgTo(null) }
 
-  const bottomNavItems = [
+  const bottomNavItems = isVendor ? [
+    { id: 'home', icon: '🏠', label: 'Home' },
+    { id: 'scan', icon: '📷', label: 'Scan' },
+    { id: 'leads', icon: '📋', label: 'My Leads', badge: vendorLeads.length },
+    { id: 'messages', icon: '💬', label: 'Messages', badge: unreadCount },
+    { id: 'profile', icon: '👤', label: 'Profile' },
+  ] : [
     { id: 'home', icon: '🏠', label: 'Home' },
     { id: 'agenda', icon: '📅', label: 'Agenda' },
     { id: 'attendees', icon: '👥', label: 'People' },
@@ -210,6 +221,7 @@ export default function AppPage() {
         </header>
 
         <main style={s.main}>
+          <div style={s.contentWrap}>
 
           {/* HOME */}
           {tab === 'home' && (
@@ -526,16 +538,59 @@ export default function AppPage() {
             </div>
           )}
 
-          {/* VENDOR SCAN (redirect to /scan) */}
-          {tab === 'scan' && (
-            <div style={s.emptyState}>
-              <div style={{ fontSize: 44, marginBottom: 12 }}>📷</div>
-              <div style={{ fontWeight: 600, marginBottom: 8 }}>Lead Scanner</div>
-              <div style={{ color: '#6B7280', fontSize: 13, marginBottom: 20 }}>Scan attendee badge QR codes to capture leads at your booth.</div>
-              <a href="/scan" style={{ ...s.btn, display: 'inline-block', textDecoration: 'none' }}>Open Scanner →</a>
+          {/* VENDOR LEADS */}
+          {tab === 'leads' && isVendor && (
+            <div>
+              <div style={s.pageHeader}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={s.pageTitle}>📋 My Leads ({vendorLeads.length})</div>
+                  {vendorLeads.length > 0 && (
+                    <button style={{ ...s.btnOutline, width: 'auto', padding: '8px 16px', fontSize: 13 }}
+                      onClick={() => window.open(`/api/export?vendorId=${user.vendorId}`, '_blank')}>
+                      Export CSV
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div style={{ padding: '0 16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+                {vendorLeads.length === 0 ? (
+                  <div style={{ ...s.emptyState, gridColumn: '1/-1' }}>
+                    <div style={{ fontSize: 36, marginBottom: 12 }}>📋</div>
+                    <div style={{ fontWeight: 600, marginBottom: 8 }}>No leads yet</div>
+                    <div style={{ color: '#6B7280', fontSize: 13, marginBottom: 16 }}>Scan attendee badges at your booth to capture leads.</div>
+                    <button style={s.btn} onClick={() => nav('scan')}>Go to Scanner →</button>
+                  </div>
+                ) : vendorLeads.map((lead: any) => (
+                  <div key={lead.id} style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: 12, padding: 16 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                        <div style={{ ...s.avatar, width: 40, height: 40 }}>{initials(lead.attendeeName)}</div>
+                        <div>
+                          <div style={s.personName}>{lead.attendeeName}</div>
+                          <div style={s.personSub}>{lead.attendeeTitle}</div>
+                        </div>
+                      </div>
+                      <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                        background: lead.interest==='hot'?'#FEE2E2':lead.interest==='warm'?'#FEF3C7':'#EFF6FF',
+                        color: lead.interest==='hot'?'#B91C1C':lead.interest==='warm'?'#92400E':'#1E40AF' }}>
+                        {lead.interest?.toUpperCase()}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 4 }}>🏢 {lead.attendeeOrg}</div>
+                    <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 4 }}>✉️ {lead.attendeeEmail}</div>
+                    {lead.attendeePhone && <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 4 }}>📞 {lead.attendeePhone}</div>}
+                    {lead.note && <div style={{ fontSize: 13, color: '#374151', marginTop: 8, padding: '8px', background: '#F9FAFB', borderRadius: 8 }}>💬 {lead.note}</div>}
+                    <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 8 }}>{new Date(lead.capturedAt).toLocaleString()}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
+          {/* VENDOR SCAN */}
+          {tab === 'scan' && isVendor && (() => { window.location.href = '/scan'; return null; })()}
+
+          </div>
         </main>
 
         <nav style={s.bottomNav}>
@@ -658,11 +713,11 @@ function typeColor(t: string) { return ({keynote:'#4338CA',breakout:'#0D9488',wo
 function tierColor(t: string) { return ({platinum:'#E5E7EB',gold:'#FCD34D',silver:'#D1D5DB',bronze:'#D97706',exhibitor:'#4338CA'} as any)[t]||'#E5E7EB' }
 
 const s: Record<string, React.CSSProperties> = {
-  shell: { display: 'flex', flexDirection: 'column', height: '100dvh', background: '#F9FAFB', maxWidth: 600, margin: '0 auto', position: 'relative', boxShadow: '0 0 40px rgba(0,0,0,0.08)' },
-  header: { background: '#4338CA', padding: '12px 16px', flexShrink: 0 },
-  headerInner: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  shell: { display: 'flex', flexDirection: 'column', height: '100dvh', background: '#F9FAFB', position: 'relative' },
+  header: { background: '#4338CA', padding: '0', flexShrink: 0 },
+  headerInner: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: 900, margin: '0 auto', padding: '12px 16px' },
   main: { flex: 1, overflowY: 'auto', paddingBottom: 80 },
-  bottomNav: { position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 600, background: 'white', borderTop: '1px solid #E5E7EB', display: 'flex', zIndex: 100 },
+  bottomNav: { position: 'fixed', bottom: 0, left: 0, right: 0, background: 'white', borderTop: '1px solid #E5E7EB', display: 'flex', zIndex: 100 },
   navItem: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 4px 10px', background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', gap: 2 },
   navItemActive: { color: '#4338CA' },
   badge: { position: 'absolute', top: -4, right: -8, background: '#DC2626', color: 'white', borderRadius: '50%', fontSize: 10, width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' },
@@ -702,6 +757,7 @@ const s: Record<string, React.CSSProperties> = {
   tierBadge: { display: 'inline-block', padding: '3px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, marginBottom: 10, color: '#374151' },
   emptyState: { padding: 40, textAlign: 'center' },
   empty: { padding: '40px 16px', textAlign: 'center', color: '#9CA3AF' },
+  contentWrap: { maxWidth: 900, margin: '0 auto', width: '100%' },
   loginPage: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, background: 'linear-gradient(135deg, #4338CA 0%, #0D9488 100%)' },
   loginCard: { background: 'white', borderRadius: 20, padding: 32, width: '100%', maxWidth: 420 },
   loginModeTabs: { display: 'flex', borderRadius: 10, overflow: 'hidden', border: '1px solid #E5E7EB', marginBottom: 24 },
