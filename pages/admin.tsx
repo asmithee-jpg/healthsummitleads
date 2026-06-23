@@ -80,14 +80,23 @@ export default function Admin() {
   async function addAttendee(e: React.FormEvent) {
     e.preventDefault()
     setAddingAttendee(true)
-    await fetch('/api/attendees', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newAttendee),
-    })
-    setAttendeeMsg(`✓ Added ${newAttendee.name}`)
-    setNewAttendee({ name: '', title: '', org: '', email: '', phone: '' })
-    await fetchAll()
+    try {
+      const res = await fetch('/api/attendees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newAttendee),
+      })
+      const added = await res.json()
+      if (added.id) {
+        setAttendees(prev => [...prev, added])
+        setAttendeeMsg(`✓ Added ${added.name}`)
+        setNewAttendee({ name: '', title: '', org: '', email: '', phone: '' })
+      } else {
+        setAttendeeMsg('Error adding attendee, please try again.')
+      }
+    } catch (err) {
+      setAttendeeMsg('Network error, please try again.')
+    }
     setAddingAttendee(false)
     setTimeout(() => setAttendeeMsg(''), 3000)
   }
