@@ -231,11 +231,15 @@ export default function Admin() {
             <div style={s.topTitle}>ACA Health Summit — Admin</div>
             <div style={s.topSub}>Conference organizer dashboard</div>
           </div>
-          <div style={s.stats}>
-            <span style={s.stat}><b>{attendees.length}</b> attendees</span>
-            <span style={s.stat}><b>{vendors.length}</b> vendors</span>
-            <span style={s.stat}><b>{leads.length}</b> leads</span>
-            <span style={s.stat}><b>{sessions.length}</b> sessions</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' as const }}>
+            <div style={s.stats}>
+              <span style={s.stat}><b>{attendees.length}</b> attendees</span>
+              <span style={s.stat}><b>{vendors.length}</b> vendors</span>
+              <span style={s.stat}><b>{leads.length}</b> leads</span>
+              <span style={s.stat}><b>{sessions.length}</b> sessions</span>
+            </div>
+            <a href="/app" style={{ fontSize: 13, color: '#6B7280', textDecoration: 'none', border: '1px solid #E5E7EB', borderRadius: 8, padding: '6px 14px', background: 'white' }}>← Back to App</a>
+            <button onClick={() => setAuthed(false)} style={{ fontSize: 13, color: '#DC2626', border: '1px solid #FCA5A5', borderRadius: 8, padding: '6px 14px', background: 'white', cursor: 'pointer' }}>Sign Out</button>
           </div>
         </div>
 
