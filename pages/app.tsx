@@ -8,19 +8,23 @@ type User = { attendeeId: string; name: string; email: string; role: UserRole; v
 
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'asmithee@insurewithcompass.com'
 
-function ACALogo({ variant = 'dark', width = 140 }: { variant?: 'dark' | 'light', width?: number }) {
-  // aca is always purple; Health/Summit text adapts to background
-  const textColor = variant === 'light' ? 'rgba(255,255,255,0.9)' : '#111827'
-  const dividerColor = variant === 'light' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.15)'
-  // On dark (purple) sidebar, make aca white so it shows up
-  const acaColor = variant === 'light' ? 'white' : '#6B3FA0'
-  const h = Math.round((44 / 140) * width)
+function ACALogo({ variant = 'dark', width = 160 }: { variant?: 'dark' | 'light', width?: number }) {
+  const scale = width / 160
+  const h = Math.round(48 * scale)
+  const textColor = variant === 'light' ? '#ffffff' : '#1a1a2e'
+  const divider = variant === 'light' ? 'rgba(255,255,255,0.4)' : '#d1d5db'
+  // aca: always bright violet, matching the logo
+  const acaFill = '#5B2EE8'
   return (
-    <svg viewBox="0 0 140 44" width={width} height={h} xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
-      <text x="2" y="36" fontFamily="'Arial Rounded MT Bold','Nunito',Arial,sans-serif" fontSize="38" fontWeight="900" fill={acaColor} letterSpacing="-1">aca</text>
-      <line x1="88" y1="6" x2="88" y2="40" stroke={dividerColor} strokeWidth="1" />
-      <text x="96" y="21" fontFamily="Arial,sans-serif" fontSize="12" fontWeight="700" fill={textColor}>Health</text>
-      <text x="96" y="37" fontFamily="Arial,sans-serif" fontSize="12" fontWeight="700" fill={textColor}>Summit</text>
+    <svg viewBox="0 0 160 48" width={width} height={h} xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
+      {/* aca - using letter-spaced bold rounded style */}
+      <text x="4" y="40" fontFamily="'Arial Rounded MT Bold', 'Nunito ExtraBold', 'Varela Round', system-ui, sans-serif"
+        fontSize="40" fontWeight="900" fill={acaFill} letterSpacing="1">aca</text>
+      {/* Thin divider */}
+      <line x1="102" y1="8" x2="102" y2="42" stroke={divider} strokeWidth="1.5"/>
+      {/* Health Summit stacked */}
+      <text x="110" y="24" fontFamily="'Helvetica Neue', Arial, sans-serif" fontSize="13" fontWeight="700" fill={textColor} letterSpacing="0.3">Health</text>
+      <text x="110" y="41" fontFamily="'Helvetica Neue', Arial, sans-serif" fontSize="13" fontWeight="700" fill={textColor} letterSpacing="0.3">Summit</text>
     </svg>
   )
 }
@@ -414,26 +418,71 @@ export default function AppPage() {
 
             {/* AGENDA */}
             {tab === 'agenda' && !selectedSession && (
-              <div style={{ padding: 24 }}>
-                <h1 style={mc.pageTitle}>📅 Event Agenda</h1>
-                {days.length > 0 && <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>{days.map(d => <button key={d} style={{ ...mc.dayBtn, ...(agendaDay === d ? mc.dayBtnActive : {}) }} onClick={() => setAgendaDay(d)}>{d}</button>)}</div>}
-                {sessions.filter(s => s.day === agendaDay).sort((a, b) => a.startTime.localeCompare(b.startTime)).map(sess => (
-                  <div key={sess.id} style={mc.card} onClick={() => setSelectedSession(sess)}>
-                    <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-                      <div style={{ minWidth: 70, textAlign: 'center' }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#4338CA' }}>{formatTime(sess.startTime)}</div>
-                        <div style={{ ...mc.typeBadge, background: typeColor(sess.type), marginTop: 6, fontSize: 10 }}>{sess.type}</div>
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={mc.cardTitle}>{sess.title}</div>
-                        <div style={mc.cardSub}>📍 {sess.location} {sess.track ? `· ${sess.track}` : ''}</div>
-                        {sess.speakerIds?.length > 0 && <div style={mc.cardSub}>{sess.speakerIds.map(id => speakers.find(s => s.id === id)?.name).filter(Boolean).join(', ')}</div>}
-                      </div>
-                      <button style={{ ...mc.star, ...(mySchedule.includes(sess.id) ? mc.starActive : {}) }} onClick={e => { e.stopPropagation(); toggleSchedule(sess.id) }}>{mySchedule.includes(sess.id) ? '★' : '☆'}</button>
-                    </div>
+              <div>
+                {/* Header */}
+                <div style={{ padding: '28px 32px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h1 style={{ fontSize: 26, fontWeight: 700, color: '#111' }}>Event Agenda</h1>
+                </div>
+                {/* Day tabs */}
+                {days.length > 0 && (
+                  <div style={{ padding: '16px 32px', borderBottom: '1px solid #E5E7EB', display: 'flex', gap: 6 }}>
+                    {days.map(d => (
+                      <button key={d} style={{ padding: '8px 20px', borderRadius: 24, border: '1.5px solid', borderColor: agendaDay === d ? '#5B2EE8' : '#E5E7EB', background: agendaDay === d ? '#5B2EE8' : 'white', color: agendaDay === d ? 'white' : '#6B7280', fontSize: 13, fontWeight: 600, cursor: 'pointer' }} onClick={() => setAgendaDay(d)}>{d}</button>
+                    ))}
                   </div>
-                ))}
-                {sessions.length === 0 && <div style={mc.empty}>Agenda coming soon.</div>}
+                )}
+                {/* Sessions */}
+                <div style={{ padding: '8px 32px 40px' }}>
+                  {sessions.filter(s => !agendaDay || s.day === agendaDay || days.length === 0).sort((a, b) => a.startTime.localeCompare(b.startTime)).map((sess, i, arr) => {
+                    const prevSess = arr[i - 1]
+                    const showDateHeader = !prevSess || prevSess.day !== sess.day
+                    const sessSpks = (sess.speakerIds || []).map(id => speakers.find(s => s.id === id)).filter(Boolean)
+                    return (
+                      <div key={sess.id}>
+                        {showDateHeader && sess.day && (
+                          <div style={{ padding: '24px 0 12px', fontSize: 15, fontWeight: 700, color: '#374151', borderBottom: '2px solid #E5E7EB', marginBottom: 0 }}>{sess.day}</div>
+                        )}
+                        <div style={{ display: 'flex', gap: 20, padding: '20px 0', borderBottom: '1px solid #F3F4F6', cursor: 'pointer' }} onClick={() => setSelectedSession(sess)}>
+                          {/* Time column */}
+                          <div style={{ minWidth: 110, flexShrink: 0 }}>
+                            <div style={{ fontSize: 13, color: '#6B7280', fontWeight: 500 }}>{formatTime(sess.startTime)}{sess.endTime ? ` – ${formatTime(sess.endTime)}` : ''}</div>
+                          </div>
+                          {/* Content */}
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 6 }}>
+                              <div style={{ ...mc.typeBadge, background: typeColor(sess.type), fontSize: 11 }}>{sess.type}</div>
+                              {sess.track && <div style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 500, background: '#F3F4F6', color: '#6B7280' }}>{sess.track}</div>}
+                            </div>
+                            <div style={{ fontSize: 17, fontWeight: 700, color: '#5B2EE8', marginBottom: 4 }}>{sess.title}</div>
+                            {sess.location && <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#9CA3AF', fontSize: 13, marginBottom: 8 }}>📍 {sess.location}</div>}
+                            {sessSpks.length > 0 && (
+                              <div style={{ marginTop: 10 }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>Speaker</div>
+                                {sessSpks.map((sp: any) => (
+                                  <div key={sp.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    {sp.avatar ? <img src={sp.avatar} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }} alt="" /> : <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#EEF2FF', color: '#5B2EE8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13 }}>{initials(sp.name)}</div>}
+                                    <div>
+                                      <div style={{ fontWeight: 600, fontSize: 13, color: '#5B2EE8' }}>{sp.name}</div>
+                                      <div style={{ fontSize: 12, color: '#9CA3AF' }}>{sp.title}{sp.title && sp.org ? ' at ' : ''}{sp.org}</div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          {/* Add to schedule */}
+                          <div style={{ flexShrink: 0 }}>
+                            <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1.5px solid', borderColor: mySchedule.includes(sess.id) ? '#5B2EE8' : '#E5E7EB', background: mySchedule.includes(sess.id) ? '#EEF2FF' : 'white', color: mySchedule.includes(sess.id) ? '#5B2EE8' : '#9CA3AF', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                              onClick={e => { e.stopPropagation(); toggleSchedule(sess.id) }}>
+                              {mySchedule.includes(sess.id) ? '★ Saved' : '☆ Save'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {sessions.length === 0 && <div style={{ textAlign: 'center', padding: '80px 20px', color: '#9CA3AF' }}>Agenda coming soon.</div>}
+                </div>
               </div>
             )}
             {tab === 'agenda' && selectedSession && (
@@ -506,22 +555,48 @@ export default function AppPage() {
 
             {/* ATTENDEES */}
             {tab === 'attendees' && !selectedAttendee && (
-              <div style={{ padding: 24 }}>
-                <h1 style={mc.pageTitle}>👥 All Attendees ({attendees.filter(a => a.id !== user.attendeeId).length})</h1>
-                <input style={mc.search} placeholder="Search by name or org…" value={search} onChange={e => setSearch(e.target.value)} />
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
-                  {attendees.filter(a => a.id !== user.attendeeId && (!search || a.name.toLowerCase().includes(search.toLowerCase()) || a.org?.toLowerCase().includes(search.toLowerCase()))).map(a => (
-                    <div key={a.id} style={mc.card} onClick={() => setSelectedAttendee(a)}>
-                      <div style={mc.personRow}>
-                        {a.avatar ? <img src={a.avatar} style={{ ...mc.avatar, objectFit: 'cover' } as any} alt="" /> : <div style={mc.avatar}>{initials(a.name)}</div>}
+              <div>
+                <div style={{ padding: '28px 32px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h1 style={{ fontSize: 26, fontWeight: 700 }}>All Attendees</h1>
+                  <div style={{ position: 'relative' }}>
+                    <input style={{ padding: '10px 16px 10px 38px', border: '1px solid #E5E7EB', borderRadius: 24, fontSize: 14, width: 260, background: 'white' }} placeholder="Search for people, products…" value={search} onChange={e => setSearch(e.target.value)} />
+                    <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', fontSize: 16 }}>🔍</span>
+                  </div>
+                </div>
+                <div style={{ padding: '0 32px 40px' }}>
+                  {attendees.filter(a => a.id !== user.attendeeId && (!search || a.name.toLowerCase().includes(search.toLowerCase()) || a.org?.toLowerCase().includes(search.toLowerCase()) || a.title?.toLowerCase().includes(search.toLowerCase()))).map(a => (
+                    <div key={a.id} style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: 12, padding: '20px 24px', marginBottom: 14, cursor: 'pointer' }} onClick={() => setSelectedAttendee(a)}>
+                      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                        {/* Avatar */}
+                        {a.avatar
+                          ? <img src={a.avatar} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} alt="" />
+                          : <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#EEF2FF', color: '#5B2EE8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 20, flexShrink: 0 }}>{initials(a.name)}</div>}
+                        {/* Info */}
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 600 }}>{a.name}</div>
-                          <div style={mc.cardSub}>{a.title}{a.title && a.org ? ' · ' : ''}{a.org}</div>
-                          {connStatus(a.id) === 'connected' && <span style={mc.connBadge}>Connected</span>}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2 }}>
+                            <span style={{ fontWeight: 700, fontSize: 16, color: '#5B2EE8' }}>{a.name}</span>
+                            {a.org && <span style={{ fontSize: 13, color: '#9CA3AF' }}>{a.org}</span>}
+                            {connStatus(a.id) === 'connected' && <span style={{ background: '#ECFDF5', color: '#059669', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>Connected</span>}
+                          </div>
+                          {a.title && <div style={{ fontSize: 14, color: '#374151', marginBottom: 8 }}>{a.title}{a.org ? ` at ${a.org}` : ''}</div>}
+                          {a.bio && (
+                            <div>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Summary</div>
+                              <div style={{ fontSize: 14, color: '#374151', lineHeight: 1.5 }}>{a.bio.slice(0, 140)}{a.bio.length > 140 ? '…' : ''}</div>
+                            </div>
+                          )}
+                        </div>
+                        {/* Action */}
+                        <div style={{ flexShrink: 0 }}>
+                          {connStatus(a.id) === 'connected'
+                            ? <button style={{ padding: '8px 16px', borderRadius: 24, border: '1.5px solid #059669', background: '#ECFDF5', color: '#059669', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }} onClick={e => { e.stopPropagation(); setMsgTo(a); nav('messages') }}>✓ Message</button>
+                            : <button style={{ padding: '8px 16px', borderRadius: 24, border: '1.5px solid #5B2EE8', background: '#5B2EE8', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }} onClick={e => { e.stopPropagation(); connect(a.id) }}>+ Connect</button>
+                          }
                         </div>
                       </div>
                     </div>
                   ))}
+                  {attendees.filter(a => a.id !== user.attendeeId).length === 0 && <div style={{ textAlign: 'center', padding: 80, color: '#9CA3AF' }}>No attendees yet.</div>}
                 </div>
               </div>
             )}
