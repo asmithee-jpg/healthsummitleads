@@ -136,7 +136,7 @@ export default function Admin() {
     setGeneratingQR(true)
     const urls: Record<string, string> = {}
     for (const a of attendees.slice(0, 50)) {
-      urls[a.id] = await QRCode.toDataURL(`https://healthsummitleads.vercel.app/scan?id=${a.id}`, { width: 200, margin: 1 })
+      urls[a.id] = await QRCode.toDataURL(`https://acahealthsummit2026.vercel.app/scan?id=${a.id}`, { width: 200, margin: 1 })
     }
     setQrUrls(urls); setGeneratingQR(false)
   }
