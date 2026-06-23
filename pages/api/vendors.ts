@@ -14,5 +14,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.json(newVendor)
   }
 
+    if (req.method === 'DELETE') {
+          const { id } = req.body
+          const existing = await db.getVendors()
+          await db.setVendors(existing.filter(v => v.id !== id))
+          return res.json({ ok: true })
+    }
+
   res.status(405).end()
 }
