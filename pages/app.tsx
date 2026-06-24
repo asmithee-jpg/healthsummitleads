@@ -11,10 +11,9 @@ const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'asmithee@insurewithc
 function ACALogo({ variant = 'dark', width = 160 }: { variant?: 'dark' | 'light', width?: number }) {
   const scale = width / 160
   const h = Math.round(48 * scale)
-  const textColor = variant === 'light' ? '#ffffff' : '#1a1a2e'
+  const textColor = variant === 'light' ? '#ffffff' : '#1a1a2e
   const divider = variant === 'light' ? 'rgba(255,255,255,0.4)' : '#d1d5db'
-  // aca: always bright violet, matching the logo
-  const acaFill = '#5B2EE8'
+  const acaFill = variant === 'light' ? '#ffffff' : '#5B2EE8'
   return (
     <svg viewBox="0 0 160 48" width={width} height={h} xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
       {/* aca - using letter-spaced bold rounded style */}
