@@ -322,7 +322,7 @@ export default function AppPage() {
   )
 
   const sidebarStyle: React.CSSProperties = {
-    width: 220, background: '#4338CA', display: 'flex', flexDirection: 'column',
+    width: 220, background: '#1e1b4b', display: 'flex', flexDirection: 'column',
     flexShrink: 0, height: '100vh', position: 'sticky', top: 0
   }
 
